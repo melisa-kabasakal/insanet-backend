@@ -15,11 +15,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+    public UserDetails loadUserByUsername(String emailOrPhone) throws UsernameNotFoundException {
+        User user;
 
-        // Burada org.springframework.security.core.userdetails.User yerine doğrudan User döndürüyoruz.
-        return user; // User sınıfınız UserDetails implement ettiği için burada doğrudan döndürülebilir.
+        if (emailOrPhone.contains("@")) {
+            user = userRepository.findByEmail(emailOrPhone)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + emailOrPhone));
+        } else {
+            user = userRepository.findByPhoneNumber(emailOrPhone)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found with phone number: " + emailOrPhone));
+        }
+
+        return user;
     }
 }

@@ -18,6 +18,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(UserAlreadyRegisteredException.class)
+    public ResponseEntity<ErrorResponse> handleUserAlreadyRegisteredException(UserAlreadyRegisteredException exception) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                exception.getMessage(),
+                HttpStatus.BAD_REQUEST.value(),
+                System.currentTimeMillis()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException exception) {
         ErrorResponse errorResponse = new ErrorResponse(

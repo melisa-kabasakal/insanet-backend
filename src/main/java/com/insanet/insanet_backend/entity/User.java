@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Set;
 
@@ -25,19 +26,16 @@ public class User implements UserDetails {
 
     @NotNull
     @NotBlank
-    @Column(name = "username")
-    private String username;
+    @Column(name = "email", unique = true)
+    private String email;
 
     @NotNull
     @NotBlank
     private String password;
 
-    @NotNull
-    @NotBlank
-    private String email;
+    @Column(name = "phone_number", unique = true)
+    private String phoneNumber;
 
-    @Column(name = "contact_info")
-    private String contactInfo;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH})
     @JoinTable(
@@ -48,6 +46,25 @@ public class User implements UserDetails {
     )
     private Set<Role> roles;
 
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_token_expiration")
+    private LocalDateTime passwordResetTokenExpiration;
+
+    @Column(name = "enabled", nullable = false)
+    private boolean enabled = true;
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public String getUsername() {
+        return email != null ? email : phoneNumber;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles;
@@ -56,11 +73,6 @@ public class User implements UserDetails {
     @Override
     public String getPassword() {
         return password;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
     }
 
     @Override
@@ -78,8 +90,4 @@ public class User implements UserDetails {
         return true;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 }
