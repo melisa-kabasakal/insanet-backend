@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface RoleRepository extends JpaRepository<Role, Long> {
 
-    @Query("SELECT r From Role r WHERE r.authority = :authority")
+    @Query("SELECT r FROM Role r WHERE r.authority = :authority")
     Optional<Role> findByAuthority(@Param("authority") String authority);
 }
 

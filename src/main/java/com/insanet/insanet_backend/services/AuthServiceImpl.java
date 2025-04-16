@@ -2,6 +2,7 @@ package com.insanet.insanet_backend.services;
 
 import com.insanet.insanet_backend.entity.Role;
 import com.insanet.insanet_backend.entity.User;
+import com.insanet.insanet_backend.enums.UserType;
 import com.insanet.insanet_backend.exceptions.UserAlreadyRegisteredException;
 import com.insanet.insanet_backend.exceptions.UserNotFoundException;
 import com.insanet.insanet_backend.repository.RoleRepository;
@@ -20,40 +21,20 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpServiceImpl otpService;
 
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public AuthServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
+                           PasswordEncoder passwordEncoder, OtpServiceImpl otpService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.otpService = otpService;
     }
 
     @Override
-    public String forgotPassword(String emailOrPhone) {
-        Optional<User> user = findUserByEmailOrPhone(emailOrPhone);
-
-        if (user.isEmpty()) {
-            throw new UserNotFoundException("User not found with provided email or phone number");
-        }
-
-        String resetToken = UUID.randomUUID().toString();
-        user.get().setPasswordResetToken(resetToken);
-        userRepository.save(user.get());
-
-        return resetToken;
-    }
-
-    private Optional<User> findUserByEmailOrPhone(String emailOrPhone) {
-        Optional<User> user = userRepository.findByEmail(emailOrPhone);
-        if (user.isEmpty()) {
-            user = userRepository.findByPhoneNumber(emailOrPhone);
-        }
-        return user;
-    }
-
-    @Override
-    public User register(String emailOrPhone, String password) {
-        Optional<User> optionalUser = Optional.empty();
+    public User register(String emailOrPhone, String password, UserType userType) {
+        Optional<User> optionalUser;
 
         if (emailOrPhone.contains("@")) {
             optionalUser = userRepository.findByEmail(emailOrPhone);
@@ -65,12 +46,13 @@ public class AuthServiceImpl implements AuthService {
             throw new UserAlreadyRegisteredException("User already registered with this email or phone");
         }
 
-        String encodePassword = passwordEncoder.encode(password);
+        String encodedPassword = passwordEncoder.encode(password);
 
-        Optional<Role> userRole = roleRepository.findByAuthority("USER");
+        Optional<Role> userRole = roleRepository.findByAuthority("ROLE_" + userType.name());
+
         if (userRole.isEmpty()) {
             Role role = new Role();
-            role.setAuthority("USER");
+            role.setAuthority("ROLE_" + userType.name());
             userRole = Optional.of(roleRepository.save(role));
         }
 
@@ -81,17 +63,10 @@ public class AuthServiceImpl implements AuthService {
             user.setPhoneNumber(emailOrPhone);
         }
 
-        user.setPassword(encodePassword);
+        user.setPassword(encodedPassword);
         user.setRoles(Set.of(userRole.get()));
 
         return userRepository.save(user);
-    }
-
-
-    private Role createDefaultRole() {
-        Role role = new Role();
-        role.setAuthority("USER");
-        return roleRepository.save(role);
     }
 
     @Override
@@ -121,6 +96,29 @@ public class AuthServiceImpl implements AuthService {
 
         String resetToken = UUID.randomUUID().toString();
         user.get().setPasswordResetToken(resetToken);
+        userRepository.save(user.get());
+
+        return resetToken;
+    }
+
+    private Optional<User> findUserByEmailOrPhone(String emailOrPhone) {
+        Optional<User> user = userRepository.findByEmail(emailOrPhone);
+        if (user.isEmpty()) {
+            user = userRepository.findByPhoneNumber(emailOrPhone);
+        }
+        return user;
+    }
+
+    @Override
+    public String forgotPassword(String emailOrPhone) {
+        Optional<User> user = findUserByEmailOrPhone(emailOrPhone);
+
+        if (user.isEmpty()) {
+            throw new UserNotFoundException("User not found with provided email or phone number");
+        }
+        String resetToken = UUID.randomUUID().toString();
+        user.get().setPasswordResetToken(resetToken);
+
         userRepository.save(user.get());
 
         return resetToken;

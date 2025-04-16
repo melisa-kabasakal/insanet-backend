@@ -21,7 +21,7 @@ public class Role implements GrantedAuthority {
 
     @NotNull
     @NotBlank
-    @Column(name = "authority")
+    @Column(name = "authority", unique = true)
     private String authority;
 
     @Override
@@ -29,4 +29,3 @@ public class Role implements GrantedAuthority {
         return "ROLE_" + authority;
     }
 }
-
