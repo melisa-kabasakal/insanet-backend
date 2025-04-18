@@ -34,36 +34,35 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public User register(String emailOrPhone, String password, UserType userType) {
-        Optional<User> optionalUser;
-
-        if (emailOrPhone.contains("@")) {
-            optionalUser = userRepository.findByEmail(emailOrPhone);
-        } else {
-            optionalUser = userRepository.findByPhoneNumber(emailOrPhone);
+        if (userType == null) {
+            throw new IllegalArgumentException("User type cannot be null");
         }
 
-        if (optionalUser.isPresent()) {
-            throw new UserAlreadyRegisteredException("User already registered with this email or phone");
-        }
+        Optional<User> existingUser = userRepository.findByEmailOrPhoneNumber(emailOrPhone, emailOrPhone);
 
-        String encodedPassword = passwordEncoder.encode(password);
-
-        Optional<Role> userRole = roleRepository.findByAuthority("ROLE_" + userType.name());
-
-        if (userRole.isEmpty()) {
-            Role role = new Role();
-            role.setAuthority("ROLE_" + userType.name());
-            userRole = Optional.of(roleRepository.save(role));
+        if (existingUser.isPresent()) {
+            throw new IllegalArgumentException("User already exists with the provided email or phone number");
         }
 
         User user = new User();
+
         if (emailOrPhone.contains("@")) {
             user.setEmail(emailOrPhone);
+            user.setPhoneNumber(null);
         } else {
             user.setPhoneNumber(emailOrPhone);
+            user.setEmail(null);
         }
 
-        user.setPassword(encodedPassword);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setUserType(userType);
+
+        Optional<Role> userRole = roleRepository.findByAuthority("ROLE_" + userType.name());
+        if (userRole.isEmpty()) {
+            Role newRole = new Role();
+            newRole.setAuthority("ROLE_" + userType.name());
+            userRole = Optional.of(roleRepository.save(newRole));
+        }
         user.setRoles(Set.of(userRole.get()));
 
         return userRepository.save(user);
@@ -102,11 +101,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Optional<User> findUserByEmailOrPhone(String emailOrPhone) {
-        Optional<User> user = userRepository.findByEmail(emailOrPhone);
-        if (user.isEmpty()) {
-            user = userRepository.findByPhoneNumber(emailOrPhone);
-        }
-        return user;
+        return userRepository.findByEmailOrPhoneNumber(emailOrPhone, emailOrPhone);
     }
 
     @Override

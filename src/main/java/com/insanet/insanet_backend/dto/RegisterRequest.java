@@ -2,6 +2,7 @@ package com.insanet.insanet_backend.dto;
 
 import com.insanet.insanet_backend.enums.UserType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,9 +20,9 @@ public class RegisterRequest {
     @NotBlank(message = "Contact info cannot be empty")
     private String emailOrPhone;
 
-    @NotBlank(message = "OTP code cannot be empty")
     private String otpCode;
 
+    @NotNull(message = "User type is required")
     private UserType userType;
 
     public void validate() {
@@ -30,13 +31,21 @@ public class RegisterRequest {
         }
 
         if (emailOrPhone.contains("@")) {
-            if (!emailOrPhone.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                throw new IllegalArgumentException("Geçersiz e-posta formatı");
-            }
+            validateEmail(emailOrPhone);
         } else {
-            if (!emailOrPhone.matches("^(\\+?\\d{1,3}[- ]?)?\\(?\\d{1,4}\\)?[- ]?\\d{1,4}[- ]?\\d{1,4}$")) {
-                throw new IllegalArgumentException("Geçersiz telefon numarası formatı");
-            }
+            validatePhone(emailOrPhone);
+        }
+    }
+
+    private void validateEmail(String email) {
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new IllegalArgumentException("Geçersiz e-posta formatı");
+        }
+    }
+
+    private void validatePhone(String phone) {
+        if (!phone.matches("^5\\d{9}$")) {
+            throw new IllegalArgumentException("Geçersiz telefon numarası formatı");
         }
     }
 }

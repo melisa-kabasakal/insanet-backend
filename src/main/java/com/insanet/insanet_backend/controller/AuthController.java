@@ -87,22 +87,16 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new ApiResponse("Email veya telefon numarası boş olamaz.", false));
         }
 
-        String otp = generateOtp();
-        boolean sentSuccessfully;
+        boolean sentSuccessfully = otpService.sendOtp(emailOrPhone);
 
-        if (emailOrPhone.contains("@")) {
-            sentSuccessfully = otpService.sendOtpToEmail(emailOrPhone, otp);
-            String responseMessage = sentSuccessfully ? "OTP sent to email" : "Error sending OTP to email";
-            return sentSuccessfully ? ResponseEntity.ok(new ApiResponse(responseMessage, true)) :
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(new ApiResponse(responseMessage, false));
-        } else {
-            sentSuccessfully = otpService.sendOtpToPhone(emailOrPhone, otp);
-            String responseMessage = sentSuccessfully ? "OTP sent to phone" : "Error sending OTP to phone";
-            return sentSuccessfully ? ResponseEntity.ok(new ApiResponse(responseMessage, true)) :
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(new ApiResponse(responseMessage, false));
-        }
+        String responseMessage = sentSuccessfully ?
+                (emailOrPhone.contains("@") ? "OTP sent to email" : "OTP sent to phone") :
+                (emailOrPhone.contains("@") ? "Error sending OTP to email" : "Error sending OTP to phone");
+
+        return sentSuccessfully ?
+                ResponseEntity.ok(new ApiResponse(responseMessage, true)) :
+                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new ApiResponse(responseMessage, false));
     }
 
 
@@ -118,7 +112,5 @@ public class AuthController {
         }
     }
 
-    private String generateOtp() {
-        return String.valueOf((int) (Math.random() * 10000));
-    }
+
 }

@@ -2,6 +2,7 @@ package com.insanet.insanet_backend.entity;
 
 import com.insanet.insanet_backend.enums.UserType;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,10 +24,10 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "email", unique = true)
+    @Column(name = "email", unique = true, nullable = true)
     private String email;
 
-    @Column(name = "phone_number", unique = true)
+    @Column(name = "phone_number", unique = true, nullable = true)
     private String phoneNumber;
 
     @Column(nullable = false)
@@ -34,6 +35,7 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_type")
+    @NotNull
     private UserType userType;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE})
