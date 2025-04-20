@@ -3,9 +3,11 @@ package com.insanet.insanet_backend.controller;
 import com.insanet.insanet_backend.dto.*;
 import com.insanet.insanet_backend.entity.Role;
 import com.insanet.insanet_backend.entity.User;
+import com.insanet.insanet_backend.exceptions.UserNotFoundException;
 import com.insanet.insanet_backend.services.AuthService;
 import com.insanet.insanet_backend.services.OtpService;
 import com.insanet.insanet_backend.config.JwtTokenProvider;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,15 +70,35 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public String forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        String resetToken = authService.sendPasswordResetToken(request.getEmailOrPhone());
-        return resetToken;
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            String resetToken = authService.sendPasswordResetToken(request.getEmailOrPhone());
+            return ResponseEntity.ok(new ApiResponse("Şifre sıfırlama kodu gönderildi", true));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse("Bu e-posta/telefon numarasına ait kullanıcı bulunamadı", false));
+        } catch (org.springframework.dao.IncorrectResultSizeDataAccessException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ApiResponse("Bu e-posta/telefon birden fazla hesapta kayıtlı. Lütfen yönetici ile iletişime geçin.", false));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Şifre sıfırlama işlemi sırasında bir hata oluştu", false));
+        }
     }
 
     @PostMapping("/reset-password")
-    public String resetPassword(@RequestBody PasswordResetRequest request) {
-        authService.resetPassword(request.getToken(), request.getNewPassword());
-        return "Password successfully reset.";
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        try {
+            User user = authService.resetPassword(
+                    request.getToken(),
+                    request.getNewPassword(),
+                    request.getEmailOrPhone()
+            );
+            return ResponseEntity.ok(new ApiResponse("Şifre başarıyla sıfırlandı", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse(e.getMessage(), false));
+        }
     }
 
     @PostMapping("/request-otp")
@@ -111,6 +133,4 @@ public class AuthController {
                     .body(new ApiResponse("Invalid OTP", false));
         }
     }
-
-
 }

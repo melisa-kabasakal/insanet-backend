@@ -10,41 +10,37 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException exception) {
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getMessage(),
-                HttpStatus.NOT_FOUND.value(),
-                System.currentTimeMillis()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        ErrorResponse response = new ErrorResponse();
+        response.setMessage(exception.getMessage());
+        response.setStatus(HttpStatus.NOT_FOUND.value());
+        response.setTimestamp(System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(UserAlreadyRegisteredException.class)
     public ResponseEntity<ErrorResponse> handleUserAlreadyRegisteredException(UserAlreadyRegisteredException exception) {
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getMessage(),
-                HttpStatus.BAD_REQUEST.value(),
-                System.currentTimeMillis()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        ErrorResponse response = new ErrorResponse();
+        response.setMessage(exception.getMessage());
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setTimestamp(System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException exception) {
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getMessage(),
-                HttpStatus.BAD_REQUEST.value(),
-                System.currentTimeMillis()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        ErrorResponse response = new ErrorResponse();
+        response.setMessage(exception.getMessage());
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setTimestamp(System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneralException(Exception exception) {
-        ErrorResponse errorResponse = new ErrorResponse(
-                exception.getMessage(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                System.currentTimeMillis()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ErrorResponse> handleException(Exception exception) {
+        ErrorResponse response = new ErrorResponse();
+        response.setMessage(exception.getMessage());
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        response.setTimestamp(System.currentTimeMillis());
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

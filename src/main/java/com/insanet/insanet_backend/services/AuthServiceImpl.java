@@ -3,7 +3,6 @@ package com.insanet.insanet_backend.services;
 import com.insanet.insanet_backend.entity.Role;
 import com.insanet.insanet_backend.entity.User;
 import com.insanet.insanet_backend.enums.UserType;
-import com.insanet.insanet_backend.exceptions.UserAlreadyRegisteredException;
 import com.insanet.insanet_backend.exceptions.UserNotFoundException;
 import com.insanet.insanet_backend.repository.RoleRepository;
 import com.insanet.insanet_backend.repository.UserRepository;
@@ -38,7 +37,12 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("User type cannot be null");
         }
 
-        Optional<User> existingUser = userRepository.findByEmailOrPhoneNumber(emailOrPhone, emailOrPhone);
+        Optional<User> existingUser;
+        if (emailOrPhone.contains("@")) {
+            existingUser = userRepository.findByEmail(emailOrPhone);
+        } else {
+            existingUser = userRepository.findByPhoneNumber(emailOrPhone);
+        }
 
         if (existingUser.isPresent()) {
             throw new IllegalArgumentException("User already exists with the provided email or phone number");
@@ -69,39 +73,45 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public User resetPassword(String token, String newPassword) {
-        Optional<User> user = userRepository.findByPasswordResetToken(token);
+    public User resetPassword(String token, String newPassword, String emailOrPhone) {
+        if (!otpService.verifyOtp(emailOrPhone, token)) {
+            throw new RuntimeException("Geçersiz veya süresi dolmuş kod");
+        }
 
+        Optional<User> user = findUserByEmailOrPhone(emailOrPhone);
         if (user.isEmpty()) {
-            throw new UserNotFoundException("Invalid password reset token");
+            throw new UserNotFoundException("Kullanıcı bulunamadı");
         }
 
         String encodedPassword = passwordEncoder.encode(newPassword);
-
         User resetUser = user.get();
         resetUser.setPassword(encodedPassword);
-        resetUser.setPasswordResetToken(null);
 
         return userRepository.save(resetUser);
     }
-
     @Override
     public String sendPasswordResetToken(String emailOrPhone) {
         Optional<User> user = findUserByEmailOrPhone(emailOrPhone);
 
         if (user.isEmpty()) {
-            throw new UserNotFoundException("User not found with provided email or phone number");
+            throw new UserNotFoundException("Bu e-posta/telefon numarasına ait kullanıcı bulunamadı");
         }
 
-        String resetToken = UUID.randomUUID().toString();
-        user.get().setPasswordResetToken(resetToken);
-        userRepository.save(user.get());
+        boolean sent = otpService.sendOtp(emailOrPhone);
 
-        return resetToken;
+        if (!sent) {
+            throw new RuntimeException("Doğrulama kodu gönderilemedi");
+        }
+
+        return "Şifre sıfırlama kodu gönderildi";
     }
 
     private Optional<User> findUserByEmailOrPhone(String emailOrPhone) {
-        return userRepository.findByEmailOrPhoneNumber(emailOrPhone, emailOrPhone);
+        if (emailOrPhone.contains("@")) {
+            return userRepository.findByEmail(emailOrPhone);
+        } else {
+            return userRepository.findByPhoneNumber(emailOrPhone);
+        }
     }
 
     @Override

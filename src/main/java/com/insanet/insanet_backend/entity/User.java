@@ -1,5 +1,6 @@
 package com.insanet.insanet_backend.entity;
 
+import com.insanet.insanet_backend.dto.DocumentsDTO;
 import com.insanet.insanet_backend.enums.UserType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -55,6 +56,12 @@ public class User implements UserDetails {
 
     @Column(name = "enabled", nullable = false)
     private boolean enabled = true;
+
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
+    @Embedded
+    private DocumentsDTO documents;
 
     @Override
     public boolean isEnabled() {

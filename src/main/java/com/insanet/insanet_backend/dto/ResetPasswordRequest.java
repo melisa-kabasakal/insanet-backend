@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class PasswordResetRequest {
+public class ResetPasswordRequest {
 
     @NotBlank(message = "Token cannot be empty")
     private String token;
@@ -16,6 +16,4 @@ public class PasswordResetRequest {
     @NotBlank(message = "New password cannot be empty")
     private String newPassword;
 
-    @NotBlank(message = "Email or phone number cannot be empty")
-    private String emailOrPhone;
 }

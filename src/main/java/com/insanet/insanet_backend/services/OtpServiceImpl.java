@@ -68,6 +68,11 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
+    public String getOtpForEmailOrPhone(String emailOrPhone) {
+        return redisTemplate.opsForValue().get("otp:" + emailOrPhone);
+    }
+
+    @Override
     public boolean verifyOtp(String emailOrPhone, String otpCode) {
         try {
             String storedOtp = redisTemplate.opsForValue().get("otp:" + emailOrPhone);

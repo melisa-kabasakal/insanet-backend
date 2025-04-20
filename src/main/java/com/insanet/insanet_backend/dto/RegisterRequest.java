@@ -8,9 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 public class RegisterRequest {
 
     @NotBlank(message = "Password cannot be empty")
@@ -48,4 +48,5 @@ public class RegisterRequest {
             throw new IllegalArgumentException("Geçersiz telefon numarası formatı");
         }
     }
+
 }

@@ -9,10 +9,10 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 
 @Entity
+@Data
 @Table(name = "role", schema = "insanet")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
 public class Role implements GrantedAuthority {
 
     @Id
@@ -23,6 +23,7 @@ public class Role implements GrantedAuthority {
     @NotBlank
     @Column(name = "authority", unique = true)
     private String authority;
+
 
     @Override
     public String getAuthority() {
