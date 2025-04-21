@@ -31,6 +31,12 @@ public class User implements UserDetails {
     @Column(name = "phone_number", unique = true, nullable = true)
     private String phoneNumber;
 
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "company_name")
+    private String companyName;
+
     @Column(nullable = false)
     private String password;
 
@@ -39,13 +45,8 @@ public class User implements UserDetails {
     @NotNull
     private UserType userType;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE})
-    @JoinTable(
-            name = "user_roles",
-            schema = "insanet",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.MERGE })
+    @JoinTable(name = "user_roles", schema = "insanet", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
     @Column(name = "password_reset_token")

@@ -1,42 +1,50 @@
 package com.insanet.insanet_backend.controller;
 
-import com.insanet.insanet_backend.dto.BidRequest;
-import com.insanet.insanet_backend.dto.BidResponse;
-import com.insanet.insanet_backend.entity.Bid;
-import com.insanet.insanet_backend.exceptions.CustomException;
+import com.insanet.insanet_backend.dto.BidDTO;
+import com.insanet.insanet_backend.dto.BidListResponse;
+import com.insanet.insanet_backend.dto.CreateBidRequest;
+import com.insanet.insanet_backend.entity.User;
 import com.insanet.insanet_backend.services.BidService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import java.math.BigDecimal;
+
 @RestController
-@RequestMapping("/api/bids")
+@RequestMapping("/api/auctions/{auctionId}/bids")
+@RequiredArgsConstructor
 public class BidController {
 
     private final BidService bidService;
 
-    @Autowired
-    public BidController(BidService bidService) {
-        this.bidService = bidService;
+    @PostMapping
+    public ResponseEntity<BidDTO> createBid(
+            @PathVariable Long auctionId,
+            @Valid @RequestBody CreateBidRequest request,
+            @AuthenticationPrincipal User bidder) {
+        return ResponseEntity.ok(bidService.createBid(auctionId, request, bidder));
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<BidResponse> createBid(@RequestBody BidRequest bidRequest) {
+    @GetMapping
+    public ResponseEntity<BidListResponse> getBids(
+            @PathVariable Long auctionId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "amount") String sortBy,
+            @RequestParam(defaultValue = "DESC") String direction) {
+        return ResponseEntity.ok(bidService.getBidsForAuction(auctionId, page, size, sortBy, direction));
+    }
 
-        Bid bid = new Bid();
-        bid.setMaterialName(bidRequest.getMaterialName());
-        bid.setDescription(bidRequest.getDescription());
-        bid.setBudget(bidRequest.getBudget());
-        bid.setStartDate(bidRequest.getStartDate());
-        bid.setEndDate(bidRequest.getEndDate());
-        bid.setStatus("active");
+    @GetMapping("/highest")
+    public ResponseEntity<BigDecimal> getHighestBidAmount(@PathVariable Long auctionId) {
+        return ResponseEntity.ok(bidService.getHighestBidAmount(auctionId));
+    }
 
-        Bid savedBid = bidService.createBid(bid);
-        BidResponse response = new BidResponse(
-                savedBid.getId(), savedBid.getMaterialName(), savedBid.getDescription(),
-                savedBid.getBudget(), savedBid.getStartDate(), savedBid.getEndDate(), savedBid.getStatus()
-        );
-
-        return ResponseEntity.ok(response);
+    @GetMapping("/winning")
+    public ResponseEntity<BidDTO> getWinningBid(@PathVariable Long auctionId) {
+        return ResponseEntity.ok(bidService.getWinningBid(auctionId));
     }
 }

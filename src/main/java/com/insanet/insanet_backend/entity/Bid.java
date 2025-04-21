@@ -1,41 +1,47 @@
 package com.insanet.insanet_backend.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bids", schema = "insanet")
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Bid {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
 
-    @Column(name = "material_name", nullable = false)
-    private String materialName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "auction_id", nullable = false)
+    private Auction auction;
 
-    @Column(name = "description", nullable = true)
-    private String description;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bidder_id", nullable = false)
+    private User bidder;
 
-    @Column(name = "budget", nullable = false)
-    private Double budget;
+    @Column(nullable = false)
+    private BigDecimal amount;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDateTime startDate;
+    private String note;
 
-    @Column(name = "end_date", nullable = false)
-    private LocalDateTime endDate;
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 
-    @ManyToOne
-    @JoinColumn(name = "contractor_id")
-    private User contractor;
+    @Column(nullable = false)
+    private boolean isWinningBid;
 
-    @Column(name = "status", nullable = false)
-    private String status;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }
