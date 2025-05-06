@@ -14,7 +14,7 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping("/api/auctions/{auctionId}/bids")
+@RequestMapping("/auctions/{auctionId}/bids")
 @RequiredArgsConstructor
 public class BidController {
 

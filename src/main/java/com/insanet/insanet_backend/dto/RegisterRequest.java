@@ -22,6 +22,7 @@ public class RegisterRequest {
 
     private String otpCode;
 
+
     @NotNull(message = "User type is required")
     private UserType userType;
 

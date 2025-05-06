@@ -1,184 +1,163 @@
 package com.insanet.insanet_backend.services;
 
-import com.insanet.insanet_backend.dto.DocumentsDTO;
 import com.insanet.insanet_backend.dto.UserProfileDTO;
+import com.insanet.insanet_backend.dto.DocumentsDTO;
+import com.insanet.insanet_backend.entity.Profile;
 import com.insanet.insanet_backend.entity.User;
-import com.insanet.insanet_backend.exceptions.CustomException;
+import com.insanet.insanet_backend.entity.Company;
+import com.insanet.insanet_backend.repository.ProfileRepository;
 import com.insanet.insanet_backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ProfileServiceImpl implements ProfileService {
 
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
-
     private final UserRepository userRepository;
-
-    @Autowired
-    public ProfileServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final ProfileRepository profileRepository;
 
     @Override
     public UserProfileDTO getUserProfile(String username) {
         User user = userRepository.findByEmailOrPhoneNumber(username, username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        UserProfileDTO dto = new UserProfileDTO();
-        dto.setId(user.getId());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhoneNumber());
-        dto.setRole(user.getUserType().toString());
-        dto.setProfilePictureUrl(user.getProfilePictureUrl());
-        dto.setDocuments(user.getDocuments());
-        dto.setLoggedIn(true);
-        return dto;
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            profile = new Profile();
+            profile.setUser(user);
+            profile.setDocuments(new DocumentsDTO());
+            profile = profileRepository.save(profile);
+        }
+
+        return convertToDTO(user, profile);
     }
 
     @Override
+    @Transactional
     public UserProfileDTO updateProfile(
             String username,
             UserProfileDTO profileDTO,
             MultipartFile profilePicture,
             MultipartFile taxCertificate,
-            MultipartFile tradeRegistry,
-            MultipartFile signatureCertificate,
-            MultipartFile chamberOfCommerce) {
-
+            MultipartFile tradeRegistryGazette,
+            MultipartFile signatureCircular,
+            MultipartFile activityCertificate
+    ) {
         User user = userRepository.findByEmailOrPhoneNumber(username, username)
-                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        updateUserFromDTO(user, profileDTO);
-
-        DocumentsDTO documents = new DocumentsDTO();
-
-        // Handle document uploads
-        if (profilePicture != null && !profilePicture.isEmpty()) {
-            String profilePicPath = saveFile(profilePicture, "profile-pictures");
-            user.setProfilePictureUrl(profilePicPath);
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            profile = new Profile();
+            profile.setUser(user);
         }
 
-        if (taxCertificate != null && !taxCertificate.isEmpty()) {
-            documents.setTaxCertificate(saveFile(taxCertificate, "tax-certificates"));
-        }
-        if (tradeRegistry != null && !tradeRegistry.isEmpty()) {
-            documents.setTradeRegistry(saveFile(tradeRegistry, "trade-registry"));
-        }
-        if (signatureCertificate != null && !signatureCertificate.isEmpty()) {
-            documents.setSignatureCertificate(saveFile(signatureCertificate, "signature-certificates"));
-        }
-        if (chamberOfCommerce != null && !chamberOfCommerce.isEmpty()) {
-            documents.setChamberOfCommerce(saveFile(chamberOfCommerce, "chamber-of-commerce"));
+        profile.setFullName(profileDTO.getFullName());
+
+        // Profil resmi yüklemesi
+        if (profilePicture != null) {
+            String profileUrl = "https://dummyurl.com/" + profilePicture.getOriginalFilename();
+            profile.setProfilePictureUrl(profileUrl);
         }
 
-        user = userRepository.save(user);
-        UserProfileDTO updatedProfile = convertToDTO(user);
-        updatedProfile.setDocuments(documents);
-        return updatedProfile;
+        // Belgeleri işle
+        DocumentsDTO documents = profile.getDocuments();
+        if (documents == null) documents = new DocumentsDTO();
+
+        try {
+            if (taxCertificate != null) {
+                documents.setTaxCertificate(new String(taxCertificate.getBytes()));
+            }
+            if (tradeRegistryGazette != null) {
+                documents.setTradeRegistry(new String(tradeRegistryGazette.getBytes()));
+            }
+            if (signatureCircular != null) {
+                documents.setSignatureCertificate(new String(signatureCircular.getBytes()));
+            }
+            if (activityCertificate != null) {
+                documents.setChamberOfCommerce(new String(activityCertificate.getBytes()));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Belge okunurken hata oluştu", e);
+        }
+
+        profile.setDocuments(documents);
+
+        profileRepository.save(profile);
+        userRepository.save(user);
+
+        return convertToDTO(user, profile);
     }
 
     @Override
-    public UserProfileDTO updateProfilePicture(String username, MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new CustomException("Profile picture file is required", HttpStatus.BAD_REQUEST);
+    public UserProfileDTO updateProfilePicture(String username, MultipartFile profilePicture) {
+        User user = userRepository.findByEmailOrPhoneNumber(username, username)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        if (profilePicture != null) {
+            String url = "https://dummyurl.com/" + profilePicture.getOriginalFilename();
+
+            Profile profile = user.getProfile();
+            if (profile != null) {
+                profile.setProfilePictureUrl(url);
+                profileRepository.save(profile);
+            }
         }
 
-        User user = userRepository.findByEmailOrPhoneNumber(username, username)
-                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
-
-        String profilePicPath = saveFile(file, "profile-pictures");
-        user.setProfilePictureUrl(profilePicPath);
-
-        user = userRepository.save(user);
-        return convertToDTO(user);
+        return UserProfileDTO.fromUser(user);
     }
 
     @Override
     public ResponseEntity<byte[]> getDocument(String username, String documentType) {
         User user = userRepository.findByEmailOrPhoneNumber(username, username)
-                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        String filePath = switch (documentType.toLowerCase()) {
-            case "profile-picture" -> user.getProfilePictureUrl();
-            case "tax-certificate" -> user.getDocuments().getTaxCertificate();
-            case "trade-registry" -> user.getDocuments().getTradeRegistry();
-            case "signature-certificate" -> user.getDocuments().getSignatureCertificate();
-            case "chamber-of-commerce" -> user.getDocuments().getChamberOfCommerce();
-            default -> throw new CustomException("Invalid document type", HttpStatus.BAD_REQUEST);
+        Profile profile = user.getProfile();
+        if (profile == null || profile.getDocuments() == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        DocumentsDTO docs = profile.getDocuments();
+        String content = switch (documentType.toLowerCase()) {
+            case "tax" -> docs.getTaxCertificate();
+            case "registry" -> docs.getTradeRegistry();
+            case "signature" -> docs.getSignatureCertificate();
+            case "activity" -> docs.getChamberOfCommerce();
+            default -> null;
         };
 
-        if (filePath == null) {
-            throw new CustomException("Document not found", HttpStatus.NOT_FOUND);
-        }
-
-        try {
-            Path path = Paths.get(filePath);
-            if (!Files.exists(path)) {
-                throw new CustomException("Document file not found", HttpStatus.NOT_FOUND);
-            }
-
-            byte[] content = Files.readAllBytes(path);
-            String contentType = Files.probeContentType(path);
-            if (contentType == null) {
-                contentType = "application/octet-stream";
-            }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
-            headers.setContentDispositionFormData("attachment", path.getFileName().toString());
-
-            return new ResponseEntity<>(content, headers, HttpStatus.OK);
-        } catch (IOException e) {
-            throw new CustomException("Error reading file: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return content != null
+                ? ResponseEntity.ok(content.getBytes())
+                : ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     }
 
-    private String saveFile(MultipartFile file, String subDirectory) {
-        try {
-            String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
-            Path uploadPath = Paths.get(uploadDir, subDirectory);
-            Files.createDirectories(uploadPath);
-            Path filePath = uploadPath.resolve(fileName);
-            Files.write(filePath, file.getBytes());
-            return filePath.toString();
-        } catch (IOException e) {
-            throw new CustomException("Could not save file: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @Override
+    public ResponseEntity<String> uploadFile(String username, MultipartFile file, String documentType) {
+        return ResponseEntity.ok("Dosya yüklendi (dummy cevap)");
     }
 
-    private UserProfileDTO convertToDTO(User user) {
-        UserProfileDTO dto = new UserProfileDTO();
-        dto.setId(user.getId());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhoneNumber());
-        dto.setRole(user.getUserType().toString());
-        dto.setProfilePictureUrl(user.getProfilePictureUrl());
-        dto.setDocuments(user.getDocuments());
-        dto.setLoggedIn(true);
-        return dto;
-    }
+    private UserProfileDTO convertToDTO(User user, Profile profile) {
+        Company company = user.getCompany();
 
-    private void updateUserFromDTO(User user, UserProfileDTO dto) {
-        if (dto.getEmail() != null && !dto.getEmail().isEmpty()) {
-            user.setEmail(dto.getEmail());
-        }
-        if (dto.getPhone() != null && !dto.getPhone().isEmpty()) {
-            user.setPhoneNumber(dto.getPhone());
-        }
+        return UserProfileDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .fullName(profile.getFullName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .jobTitle(null)
+                .companyName(company != null ? company.getCompanyName() : null)
+                .companyFullName(company != null ? company.getCompanyFullName() : null)
+                .taxId(company != null ? company.getTaxId() : null)
+                .profilePictureUrl(profile.getProfilePictureUrl())
+                .isLoggedIn(true)
+                .build();
     }
 }

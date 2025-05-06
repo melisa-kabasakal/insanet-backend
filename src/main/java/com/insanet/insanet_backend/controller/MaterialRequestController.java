@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/insanet/material-requests")
+@RequestMapping("/material-requests")
 public class MaterialRequestController {
 
     private final MaterialRequestService materialRequestService;

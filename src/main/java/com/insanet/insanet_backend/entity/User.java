@@ -25,17 +25,11 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "email", unique = true, nullable = true)
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @Column(name = "phone_number", unique = true, nullable = true)
+    @Column(name = "phone_number", unique = true, nullable = false)
     private String phoneNumber;
-
-    @Column(name = "full_name")
-    private String fullName;
-
-    @Column(name = "company_name")
-    private String companyName;
 
     @Column(nullable = false)
     private String password;
@@ -49,6 +43,10 @@ public class User implements UserDetails {
     @JoinTable(name = "user_roles", schema = "insanet", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     @Column(name = "password_reset_token")
     private String passwordResetToken;
 
@@ -58,11 +56,9 @@ public class User implements UserDetails {
     @Column(name = "enabled", nullable = false)
     private boolean enabled = true;
 
-    @Column(name = "profile_picture_url")
-    private String profilePictureUrl;
-
-    @Embedded
-    private DocumentsDTO documents;
+    // Profile ile ilişkili
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Profile profile;
 
     @Override
     public boolean isEnabled() {

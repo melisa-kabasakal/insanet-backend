@@ -23,8 +23,8 @@ public class UserSummaryDTO {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .fullName(user.getFullName())
-                .companyName(user.getCompanyName())
+                .fullName(user.getProfile() != null ? user.getProfile().getFullName() : null)
+                .companyName(user.getCompany() != null ? user.getCompany().getCompanyName() : null)
                 .role(user.getRoles() != null && !user.getRoles().isEmpty() ? user.getRoles().iterator().next().getAuthority() : "ROLE_USER")
                 .build();
     }

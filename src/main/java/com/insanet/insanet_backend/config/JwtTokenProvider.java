@@ -29,7 +29,6 @@ public class JwtTokenProvider {
         if (secret == null || secret.isEmpty()) {
             throw new IllegalArgumentException("JWT Secret Key is not provided or is empty!");
         }
-        // Secret key'i 64 byte'a tamamla (HS512 için minimum gereksinim)
         byte[] keyBytes = new byte[64];
         byte[] secretBytes = secret.getBytes();
         System.arraycopy(secretBytes, 0, keyBytes, 0, Math.min(secretBytes.length, keyBytes.length));
