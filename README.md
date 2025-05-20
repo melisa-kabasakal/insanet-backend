@@ -40,3 +40,14 @@ JUnit & Mockito test structure is included (in progress).
 ---
 
 ### Feel free to explore and contact for detailed demo or code explanations.
+
+----
+
+## Frontend Migration Note
+
+The frontend of this project was originally developed with Vanilla JavaScript.  
+It was later fully refactored and migrated to React by the same developer to improve scalability, state management, and user experience.  
+The React version includes Context API, protected routes, and modular structure.
+
+> The frontend repository is private due to business requirements but can be demonstrated upon request.
+
