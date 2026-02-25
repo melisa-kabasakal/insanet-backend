@@ -34,7 +34,7 @@ The full version includes Redis-based OTP authentication, PostgreSQL data manage
 JUnit & Mockito test structure is included (in progress).
 
 ## Notes
-- `application.properties` is anonymized and tracked via .gitignore  
+- Sensitive configuration values are externalized using environment variables for security reasons.
 - This project is part of a full-stack implementation including a React frontend
 
 ---
